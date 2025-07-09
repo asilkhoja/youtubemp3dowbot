@@ -2,6 +2,7 @@ import os
 import asyncio
 import uuid
 from telegram import Update
+from dotenv import load_dotenv
 from telegram.ext import (
     ApplicationBuilder,
     ContextTypes,
@@ -11,9 +12,10 @@ from telegram.ext import (
 )
 from yt_dlp import YoutubeDL
 from collections import defaultdict
+load_dotenv() 
 
 # 🔑 Bot tokeningiz
-TOKEN = '7960576551:AAHMZ3UV0p7QtKBusiH-v6vMq4H2oIpsECs'  # ← bu yerga tokeningizni yozing
+TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 
 # 📁 Fayl saqlash joylari
 DOWNLOAD_DIR = 'downloads'
