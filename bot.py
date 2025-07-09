@@ -12,19 +12,20 @@ from telegram.ext import (
 )
 from yt_dlp import YoutubeDL
 from collections import defaultdict
-load_dotenv() 
 
-# 🔑 Bot tokeningiz
+# 🔐 .env fayldan tokenni yuklash
+load_dotenv()
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 
-# 📁 Fayl saqlash joylari
+# 📁 Fayllar joylashadigan papka
 DOWNLOAD_DIR = 'downloads'
 USERS_FILE = 'users.txt'
+COOKIE_FILE = 'www.youtube.com_cookies.txt'  # Cookie fayli shu nomda bo'lishi kerak
 
 # 👥 Har foydalanuvchi uchun navbat
 user_queues = defaultdict(asyncio.Queue)
 
-# 📁 Papkalarni yaratish
+# 📂 Papkalarni yaratish
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
 
@@ -33,7 +34,7 @@ def sanitize_url(url: str) -> str:
     return url.split("&")[0] if "&" in url else url
 
 
-# 📥 MP3 yuklab olish
+# 📥 MP3 yuklab olish (cookie bilan)
 async def download_audio(url: str) -> str:
     filename = f"{uuid.uuid4().hex}.mp3"
     output_path = os.path.join(DOWNLOAD_DIR, filename)
@@ -42,6 +43,7 @@ async def download_audio(url: str) -> str:
         'format': 'bestaudio/best',
         'outtmpl': output_path.replace('.mp3', ''),
         'quiet': True,
+        'cookiefile': COOKIE_FILE if os.path.exists(COOKIE_FILE) else None,
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
@@ -55,7 +57,7 @@ async def download_audio(url: str) -> str:
     return output_path
 
 
-# 👥 Foydalanuvchini saqlash va fayl yuborish
+# 👥 Foydalanuvchilarni saqlash
 def get_user_count():
     if not os.path.exists(USERS_FILE):
         return 0
@@ -80,7 +82,7 @@ async def save_user(user_id: int, context: ContextTypes.DEFAULT_TYPE):
     if user_count % 50 == 0:
         try:
             await context.bot.send_document(
-                chat_id='@Asilkhoja_Mansurov',  # ← bu yerga o‘zingizni yozing
+                chat_id='@Asilkhoja_Mansurov',  # ← bu yerga o‘zingizni kanal yoki admin ID yozing
                 document=open(USERS_FILE, 'rb'),
                 caption=f"📄 Foydalanuvchilar soni: {user_count}"
             )
@@ -90,6 +92,7 @@ async def save_user(user_id: int, context: ContextTypes.DEFAULT_TYPE):
 
 # 🟢 /start komandasi
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await save_user(update.effective_user.id, context)
     await update.message.reply_text(
         "🎧 YouTube MP3 botiga xush kelibsiz!\n\n🔗 Menga YouTube link yuboring, men uni MP3 ga aylantirib yuboraman."
     )
@@ -122,6 +125,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             os.remove(mp3_path)
 
+            # Eski xabarlarni o‘chirish
             await context.bot.delete_message(
                 chat_id=current_update.effective_chat.id,
                 message_id=current_update.message.message_id
@@ -132,10 +136,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
 
         except Exception as e:
-            await current_update.message.reply_text(f"❌ Xatolik yuz berdi: {str(e)}")
+            await current_update.message.reply_text(f"")
 
 
-# 🚀 Botni ishga tushurish
+# 🚀 Botni ishga tushurishefefefw
 if __name__ == '__main__':
     app = ApplicationBuilder().token(TOKEN).build()
 
